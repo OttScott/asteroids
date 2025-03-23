@@ -41,7 +41,8 @@ def main():
     asteroid_field = AsteroidField()
 
     player = Player(player_start_x, player_start_y, PLAYER_RADIUS)
-
+    player.asteroid_group = grp_asteroids
+    
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     while (True):
         for event in pygame.event.get():

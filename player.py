@@ -29,7 +29,7 @@ class Player(CircleShape):
     def move(self, dt):
         # move the player
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        self.position += forward * PLAYER_SPEED * dt
+        self.position += self.velocity * dt
 
         # wrap around the screen
         if self.position.x > SCREEN_WIDTH:
@@ -47,11 +47,22 @@ class Player(CircleShape):
         self.rotation += PLAYER_TURN_SPEED * dt
         self.rotation %= 360
 
-    def warp(self):
-        # warp the player
-        self.position.x = random.randint(0, SCREEN_WIDTH)
-        self.position.y = random.randint(0, SCREEN_HEIGHT)
-        self.rotation = random.randint(0, 360)
+    def warp(self, asteroid_group=None):
+        safe = False
+        while not safe:
+            # warp the player
+            self.position.x = random.randint(0, SCREEN_WIDTH)
+            self.position.y = random.randint(0, SCREEN_HEIGHT)
+            self.rotation = random.randint(0, 360)
+            safe = True
+            
+            # check if the player is in a safe zone (if we have an asteroid group)
+            if asteroid_group:
+                for asteroid in asteroid_group:
+                    if self.is_colliding(asteroid):
+                        safe = False
+                        break
+        
 
     def shoot(self):
         # shoot a bullet
@@ -70,16 +81,21 @@ class Player(CircleShape):
             self.rotate(-dt)
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.rotate(dt)
-        if keys[pygame.K_w]:
-            self.move(dt)
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            self.velocity += pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_ACCEL * dt
+            if self.velocity.length() > PLAYER_MAX_SPEED:
+                self.velocity.scale_to_length(PLAYER_MAX_SPEED)
         if keys[pygame.K_s]:
-            self.warp()
+            # The asteroid_group will be passed when we set it
+            self.warp(getattr(self, 'asteroid_group', None))
         if keys[pygame.K_SPACE]:
             self.shoot()
         if keys[pygame.K_ESCAPE] or (keys[pygame.K_c] and keys[pygame.K_LCTRL]):
             pygame.quit()
             sys.exit()
-        
+
+        self.position += self.velocity * dt
+
         # update the shot timeout
         if self.shot_timeout > 0:
             self.shot_timeout -= dt
